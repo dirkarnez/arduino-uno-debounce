@@ -1,90 +1,86 @@
-//#include <gsm_a6.h>
-//
-//
-//
-//#define RX 7
-//#define TX 8
-//#define RESET 2
-//#define BAUD 9600
-//
-//
-//GSMSim gsm;
-//
-///*
-// * Also you can this types:
-// * GSMSim gsm(RX, TX);
-// * GSMSim gsm(RX, TX, RESET);
-// * GSMSim gsm(RX, TX, RESET, LED_PIN, LED_FLAG);
-// */
-//
-//void setup() {
-//  // put your setup code here, to run once:
-//  
-//  Serial.begin(9600);
-//
-//  Serial.println("GSMSim Library - Call Example");
-//  Serial.println("");
-//  delay(1000);
-//
-//  gsm.start(); // baud default 9600
-//  //gsm.start(BAUD);
-//
-//  char* phone_no = "xxxxxxxx";
-//
-//  Serial.println("Calling the number " + String(phone_no));
-//  Serial.println(gsm.call(phone_no));
-//  delay(100000);
-//  Serial.println("Call hang off");
-//  gsm.callHangoff();
-//
-//  
-//
-//  
-//}
-//
-//void loop() {
-//  // put your main code here, to run repeatedly:
-//}
+/*
+  Debounce
 
-#include <SoftwareSerial.h>
+  Each time the input pin goes from LOW to HIGH (e.g. because of a push-button
+  press), the output pin is toggled from LOW to HIGH or HIGH to LOW. There's a
+  minimum delay between toggles to debounce the circuit (i.e. to ignore noise).
 
-//Create software serial object to communicate with A6
-SoftwareSerial mySerial(2, 4); //A6 Tx & Rx is connected to Arduino #2 & #4
+  The circuit:
+  - LED attached from pin 13 to ground through 220 ohm resistor
+  - pushbutton attached from pin 2 to +5V
+  - 10 kilohm resistor attached from pin 2 to ground
 
-void setup()
-{
-//Begin serial communication with Arduino and Arduino IDE (Serial Monitor)
-Serial.begin(115200);
+  - Note: On most Arduino boards, there is already an LED on the board connected
+    to pin 13, so you don't need any extra components for this example.
 
-//Begin serial communication with Arduino and A6
-mySerial.begin(115200);
+  created 21 Nov 2006
+  by David A. Mellis
+  modified 30 Aug 2011
+  by Limor Fried
+  modified 28 Dec 2012
+  by Mike Walters
+  modified 30 Aug 2016
+  by Arturo Guadalupi
 
-Serial.println("Initializing...");
-delay(1000);
+  This example code is in the public domain.
 
-mySerial.println("AT"); //Once the handshake test is successful, i t will back to OK
-updateSerial();
+  https://www.arduino.cc/en/Tutorial/BuiltInExamples/Debounce
+*/
 
-mySerial.println("ATD+852xxxxxxxx"); // change ZZ with country code and xxxxxxxxxxx with phone number to dial
-updateSerial();
-delay(20000); // wait for 20 seconds...
-mySerial.println("ATH"); //hang up
-updateSerial();
+// constants won't change. They're used here to set pin numbers:
+const int buttonPin = 2;  // the number of the pushbutton pin
+const int ledPin = 13;    // the number of the LED pin
+
+// Variables will change:
+int ledState = HIGH;        // the current state of the output pin
+int buttonState;            // the current reading from the input pin
+int lastButtonState = LOW;  // the previous reading from the input pin
+
+// the following variables are unsigned longs because the time, measured in
+// milliseconds, will quickly become a bigger number than can be stored in an int.
+unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
+unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+
+void setup() {
+  pinMode(buttonPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+
+  // set initial LED state
+  digitalWrite(ledPin, ledState);
 }
 
-void loop()
-{
-}
+void loop() {
+  // read the state of the switch into a local variable:
+  int reading = digitalRead(buttonPin);
 
-void updateSerial()
-{
-delay(500);
-while (Serial.available())
-{
-mySerial.write(Serial.read());//Forward what Serial received to Software Serial Port
-}
-while(mySerial.available())
-{
-Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
-}
+  // check to see if you just pressed the button
+  // (i.e. the input went from LOW to HIGH), and you've waited long enough
+  // since the last press to ignore any noise:
+
+  // If the switch changed, due to noise or pressing:
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // whatever the reading is at, it's been there for longer than the debounce
+    // delay, so take it as the actual current state:
+
+    // if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      // only toggle the LED if the new button state is HIGH
+      if (buttonState == HIGH) {
+        ledState = !ledState;
+      }
+    }
+  }
+
+  // set the LED:
+  digitalWrite(ledPin, ledState);
+
+  // save the reading. Next time through the loop, it'll be the lastButtonState:
+  lastButtonState = reading;
 }
